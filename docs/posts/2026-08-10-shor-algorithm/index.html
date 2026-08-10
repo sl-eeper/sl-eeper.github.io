@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.42">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Hyungwoo Jo">
+<meta name="dcterms.date" content="2026-08-10">
+<meta name="description" content="쇼어 알고리즘은 왜 소인수분해를 빠르게 풀 수 있는가: 주기 찾기, QFT, 그리고 계산 복잡도">
+
+<title>쇼어 알고리즘: 소인수분해를 주기 찾기로 바꾸는 방법 – Analytics Notes</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-de84f8d6bb715db06a919283c2d1e787.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-6cd848dc9278ff8c2bd512f804fe0bcd.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../styles.css">
+</head>
+
+<body class="floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top quarto-banner">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">Analytics Notes</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../../index.html"> 
+<span class="menu-text">Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../index.html"> 
+<span class="menu-text">Posts</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../about.html"> 
+<span class="menu-text">About</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/sl-eeper"> <i class="bi bi-github" role="img" aria-label="GitHub Profile">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default toc-left page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">쇼어 알고리즘: 소인수분해를 주기 찾기로 바꾸는 방법</h1>
+                  <div>
+        <div class="description">
+          쇼어 알고리즘은 왜 소인수분해를 빠르게 풀 수 있는가: 주기 찾기, QFT, 그리고 계산 복잡도
+        </div>
+      </div>
+                          <div class="quarto-categories">
+                <div class="quarto-category">quantum-computing</div>
+                <div class="quarto-category">algorithm</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      <div>
+      <div class="quarto-title-meta-heading">Author</div>
+      <div class="quarto-title-meta-contents">
+               <p><a href="https://github.com/hyungwoo-jo">Hyungwoo Jo</a> </p>
+            </div>
+    </div>
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">August 10, 2026</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#소인수분해를-주기-찾기-문제로-바꾸기" id="toc-소인수분해를-주기-찾기-문제로-바꾸기" class="nav-link active" data-scroll-target="#소인수분해를-주기-찾기-문제로-바꾸기">1. 소인수분해를 주기 찾기 문제로 바꾸기</a></li>
+  <li><a href="#쇼어-알고리즘의-전체-과정" id="toc-쇼어-알고리즘의-전체-과정" class="nav-link" data-scroll-target="#쇼어-알고리즘의-전체-과정">2. 쇼어 알고리즘의 전체 과정</a></li>
+  <li><a href="#양자-주기-찾기" id="toc-양자-주기-찾기" class="nav-link" data-scroll-target="#양자-주기-찾기">3. 양자 주기 찾기</a>
+  <ul class="collapse">
+  <li><a href="#두-개의-레지스터-준비" id="toc-두-개의-레지스터-준비" class="nav-link" data-scroll-target="#두-개의-레지스터-준비">3.1 두 개의 레지스터 준비</a></li>
+  <li><a href="#모듈러-지수-연산" id="toc-모듈러-지수-연산" class="nav-link" data-scroll-target="#모듈러-지수-연산">3.2 모듈러 지수 연산</a></li>
+  <li><a href="#중첩이-함수값과-얽히는-과정" id="toc-중첩이-함수값과-얽히는-과정" class="nav-link" data-scroll-target="#중첩이-함수값과-얽히는-과정">3.3 중첩이 함수값과 얽히는 과정</a></li>
+  </ul></li>
+  <li><a href="#왜-두-번째-레지스터를-1rangle로-시작해도-되는가" id="toc-왜-두-번째-레지스터를-1rangle로-시작해도-되는가" class="nav-link" data-scroll-target="#왜-두-번째-레지스터를-1rangle로-시작해도-되는가">4. 왜 두 번째 레지스터를 <span class="math inline">\(|1\rangle\)</span>로 시작해도 되는가</a>
+  <ul class="collapse">
+  <li><a href="#u의-고유벡터에는-주기가-위상으로-들어-있다" id="toc-u의-고유벡터에는-주기가-위상으로-들어-있다" class="nav-link" data-scroll-target="#u의-고유벡터에는-주기가-위상으로-들어-있다">4.1 <span class="math inline">\(U\)</span>의 고유벡터에는 주기가 위상으로 들어 있다</a></li>
+  <li><a href="#n15-a7인-경우를-직접-계산해보기" id="toc-n15-a7인-경우를-직접-계산해보기" class="nav-link" data-scroll-target="#n15-a7인-경우를-직접-계산해보기">4.2 <span class="math inline">\(N=15\)</span>, <span class="math inline">\(a=7\)</span>인 경우를 직접 계산해보기</a></li>
+  <li><a href="#그렇다면-1rangle은-어떻게-고유벡터들로-분해되는가" id="toc-그렇다면-1rangle은-어떻게-고유벡터들로-분해되는가" class="nav-link" data-scroll-target="#그렇다면-1rangle은-어떻게-고유벡터들로-분해되는가">4.3 그렇다면 <span class="math inline">\(|1\rangle\)</span>은 어떻게 고유벡터들로 분해되는가</a></li>
+  <li><a href="#n15-a7에서-분해를-직접-확인하기" id="toc-n15-a7에서-분해를-직접-확인하기" class="nav-link" data-scroll-target="#n15-a7에서-분해를-직접-확인하기">4.3.1 <span class="math inline">\(N=15\)</span>, <span class="math inline">\(a=7\)</span>에서 분해를 직접 확인하기</a></li>
+  <li><a href="#제어된-ux를-적용하면-어떻게-위상이-생기는가" id="toc-제어된-ux를-적용하면-어떻게-위상이-생기는가" class="nav-link" data-scroll-target="#제어된-ux를-적용하면-어떻게-위상이-생기는가">4.4 제어된 <span class="math inline">\(U^x\)</span>를 적용하면 어떻게 위상이 생기는가</a></li>
+  </ul></li>
+  <li><a href="#qft는-위상에-들어-있는-주기를-어떻게-측정값으로-바꾸는가" id="toc-qft는-위상에-들어-있는-주기를-어떻게-측정값으로-바꾸는가" class="nav-link" data-scroll-target="#qft는-위상에-들어-있는-주기를-어떻게-측정값으로-바꾸는가">5. QFT는 위상에 들어 있는 주기를 어떻게 측정값으로 바꾸는가</a>
+  <ul class="collapse">
+  <li><a href="#yqsr인-경우" id="toc-yqsr인-경우" class="nav-link" data-scroll-target="#yqsr인-경우">5.1 <span class="math inline">\(y/Q=s/r\)</span>인 경우</a></li>
+  <li><a href="#yq와-sr이-다른-경우" id="toc-yq와-sr이-다른-경우" class="nav-link" data-scroll-target="#yq와-sr이-다른-경우">5.2 <span class="math inline">\(y/Q\)</span>와 <span class="math inline">\(s/r\)</span>이 다른 경우</a></li>
+  <li><a href="#n15-a7인-경우" id="toc-n15-a7인-경우" class="nav-link" data-scroll-target="#n15-a7인-경우">5.3 <span class="math inline">\(N=15\)</span>, <span class="math inline">\(a=7\)</span>인 경우</a></li>
+  </ul></li>
+  <li><a href="#측정값에서-주기-r을-복원하기" id="toc-측정값에서-주기-r을-복원하기" class="nav-link" data-scroll-target="#측정값에서-주기-r을-복원하기">6. 측정값에서 주기 <span class="math inline">\(r\)</span>을 복원하기</a></li>
+  <li><a href="#계산-복잡도에서-어떤-이점이-생기는가" id="toc-계산-복잡도에서-어떤-이점이-생기는가" class="nav-link" data-scroll-target="#계산-복잡도에서-어떤-이점이-생기는가">7. 계산 복잡도에서 어떤 이점이 생기는가?</a>
+  <ul class="collapse">
+  <li><a href="#시험-나눗셈의-경우" id="toc-시험-나눗셈의-경우" class="nav-link" data-scroll-target="#시험-나눗셈의-경우">7.1 시험 나눗셈의 경우</a></li>
+  <li><a href="#실제-고전-알고리즘의-경우" id="toc-실제-고전-알고리즘의-경우" class="nav-link" data-scroll-target="#실제-고전-알고리즘의-경우">7.2 실제 고전 알고리즘의 경우</a></li>
+  <li><a href="#쇼어-알고리즘의-경우" id="toc-쇼어-알고리즘의-경우" class="nav-link" data-scroll-target="#쇼어-알고리즘의-경우">7.3 쇼어 알고리즘의 경우</a></li>
+  <li><a href="#양자적-특성이-각각-어디에-사용되는가" id="toc-양자적-특성이-각각-어디에-사용되는가" class="nav-link" data-scroll-target="#양자적-특성이-각각-어디에-사용되는가">7.4 양자적 특성이 각각 어디에 사용되는가</a></li>
+  </ul></li>
+  <li><a href="#계산-복잡도와-실제-양자컴퓨터의-차이" id="toc-계산-복잡도와-실제-양자컴퓨터의-차이" class="nav-link" data-scroll-target="#계산-복잡도와-실제-양자컴퓨터의-차이">8. 계산 복잡도와 실제 양자컴퓨터의 차이</a></li>
+  <li><a href="#정리" id="toc-정리" class="nav-link" data-scroll-target="#정리">9. 정리</a></li>
+  </ul>
+</nav>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+    </div>
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+
+<p>RSA와 같은 공개키 암호에서는 큰 숫자를 소인수분해하는 것이 어렵다는 성질을 이용하고 있다. 두 소수 <span class="math inline">\(p\)</span>, <span class="math inline">\(q\)</span>를 곱하여 <span class="math inline">\(N=pq\)</span>를 계산하는 것은 어렵지 않지만, 반대로 <span class="math inline">\(N\)</span>만 주어진 상태에서 다시 <span class="math inline">\(p\)</span>와 <span class="math inline">\(q\)</span>를 찾는 데에는 매우 많은 계산이 필요하기 때문이다.</p>
+<p>쇼어 알고리즘은 양자컴퓨터를 이용하여 이 소인수분해 문제를 해결하는 알고리즘이다. 다만 양자컴퓨터가 <span class="math inline">\(N\)</span>을 입력받아 소인수 <span class="math inline">\(p\)</span>, <span class="math inline">\(q\)</span>를 바로 계산하는 방식은 아니다. 우선 소인수분해 문제를 <span class="math inline">\(f(x)=a^x \pmod N\)</span>이라는 함수의 주기를 찾는 문제로 바꾸고, 이 주기를 양자 위상 추정과 양자 푸리에 변환(QFT)을 이용하여 찾는다. 이후 찾은 주기로부터 다시 고전적인 최대공약수 계산을 통해 소인수를 구하게 된다.</p>
+<p>그렇다면 소인수분해 문제가 어떻게 주기 찾기 문제로 바뀌는지, 단순한 <span class="math inline">\(|1\rangle\)</span> 상태에서 시작했는데 어떻게 주기에 대한 위상 정보가 생기는지, 그리고 마지막으로 이것이 계산 복잡도에서 어떤 이점을 가지는지 순서대로 알아보자.</p>
+<hr>
+<section id="소인수분해를-주기-찾기-문제로-바꾸기" class="level2">
+<h2 class="anchored" data-anchor-id="소인수분해를-주기-찾기-문제로-바꾸기">1. 소인수분해를 주기 찾기 문제로 바꾸기</h2>
+<p>우선 소인수분해할 홀수 합성수를 <span class="math inline">\(N\)</span>이라고 하고, <span class="math inline">\(1&lt;a&lt;N\)</span>인 정수 <span class="math inline">\(a\)</span>를 하나 선택하자. <span class="math inline">\(a\)</span>와 <span class="math inline">\(N\)</span>은 서로소라고 가정하고 다음 함수를 정의한다.</p>
+<p><span class="math display">\[
+f(x)=a^x \pmod N
+\]</span></p>
+<p><span class="math inline">\(a\)</span>와 <span class="math inline">\(N\)</span>이 서로소라면 이 함수의 값은 일정한 간격으로 반복된다. 즉 다음 식을 만족하는 가장 작은 양의 정수 <span class="math inline">\(r\)</span>이 존재한다.</p>
+<p><span class="math display">\[
+a^r\equiv1\pmod N
+\]</span></p>
+<p>이 <span class="math inline">\(r\)</span>을 <span class="math inline">\(a\)</span>의 <span class="math inline">\(N\)</span>에 대한 위수라고 하고, <span class="math inline">\(f(x)\)</span>의 주기라고 볼 수 있다.</p>
+<p>예를 들어 <span class="math inline">\(N=15\)</span>, <span class="math inline">\(a=7\)</span>인 경우를 한번 계산해보자.</p>
+<p><span class="math display">\[
+\begin{aligned}
+7^0&amp;\equiv1\pmod{15},\\
+7^1&amp;\equiv7\pmod{15},\\
+7^2&amp;\equiv4\pmod{15},\\
+7^3&amp;\equiv13\pmod{15},\\
+7^4&amp;\equiv1\pmod{15}.
+\end{aligned}
+\]</span></p>
+<p><span class="math inline">\(7^4\)</span>에서 다시 1로 돌아오기 때문에 이후의 값도 <span class="math inline">\(1,7,4,13\)</span>의 순서로 반복된다. 따라서 이 경우 주기는 <span class="math inline">\(r=4\)</span>이다.</p>
+<p>그렇다면 함수의 주기를 찾는 것이 어떻게 <span class="math inline">\(N\)</span>의 소인수를 찾는 문제로 이어지는지 알아보자. <span class="math inline">\(r\)</span>이 짝수라면 <span class="math inline">\(a^r-1\)</span>은 다음과 같이 인수분해할 수 있다.</p>
+<p><span class="math display">\[
+a^r-1=
+(a^{r/2}-1)(a^{r/2}+1)
+\]</span></p>
+<p>그리고 주기의 정의에 의해 <span class="math inline">\(a^r\equiv1\pmod N\)</span>이므로</p>
+<p><span class="math display">\[
+a^r-1\equiv0\pmod N
+\]</span></p>
+<p>가 된다. 즉 <span class="math inline">\(N\)</span>은 <span class="math inline">\((a^{r/2}-1)(a^{r/2}+1)\)</span>을 나누게 된다. 이때 <span class="math inline">\(a^{r/2}\not\equiv-1\pmod N\)</span>이라면 두 항과 <span class="math inline">\(N\)</span>의 최대공약수를 계산하여 자명하지 않은 인수를 얻을 수 있다.</p>
+<p><span class="math display">\[
+p=\gcd(a^{r/2}-1,N)
+\]</span></p>
+<p><span class="math display">\[
+q=\gcd(a^{r/2}+1,N)
+\]</span></p>
+<p>앞의 <span class="math inline">\(N=15\)</span>, <span class="math inline">\(a=7\)</span>, <span class="math inline">\(r=4\)</span>를 그대로 대입해보자.</p>
+<p><span class="math display">\[
+\gcd(7^2-1,15)
+=
+\gcd(48,15)
+=
+3
+\]</span></p>
+<p><span class="math display">\[
+\gcd(7^2+1,15)
+=
+\gcd(50,15)
+=
+5
+\]</span></p>
+<p>따라서 <span class="math inline">\(15=3\times5\)</span>의 두 인수를 얻을 수 있다. 결국 소인수 <span class="math inline">\(p\)</span>, <span class="math inline">\(q\)</span>를 직접 찾는 대신 <span class="math inline">\(f(x)=a^x\pmod N\)</span>의 주기 <span class="math inline">\(r\)</span>을 찾은 뒤, 마지막에 최대공약수를 계산하는 문제로 바꿀 수 있다는 것을 알 수 있다.</p>
+</section>
+<section id="쇼어-알고리즘의-전체-과정" class="level2">
+<h2 class="anchored" data-anchor-id="쇼어-알고리즘의-전체-과정">2. 쇼어 알고리즘의 전체 과정</h2>
+<p>쇼어 알고리즘은 모든 과정을 양자컴퓨터에서 계산하는 알고리즘은 아니다. <span class="math inline">\(a\)</span>를 선택하고 결과를 검증하는 과정은 고전 컴퓨터에서 시행하고, 주기 <span class="math inline">\(r\)</span>을 찾는 부분에 양자 알고리즘을 사용한다. 전체적인 과정은 다음과 같다.</p>
+<ol type="1">
+<li><span class="math inline">\(N\)</span>이 짝수이거나 <span class="math inline">\(p^k\)</span> 형태의 완전 거듭제곱인지 고전 알고리즘으로 확인한다. 이에 해당하면 이 단계에서 인수를 얻을 수 있다.</li>
+<li><span class="math inline">\(1&lt;a&lt;N\)</span>인 정수 <span class="math inline">\(a\)</span>를 무작위로 선택한다.</li>
+<li><span class="math inline">\(\gcd(a,N)\)</span>을 계산한다. 이 값이 1보다 크다면 이미 <span class="math inline">\(N\)</span>의 인수를 찾은 것이다.</li>
+<li><span class="math inline">\(a\)</span>와 <span class="math inline">\(N\)</span>이 서로소라면 양자 주기 찾기를 이용하여 <span class="math inline">\(a^r\equiv1\pmod N\)</span>을 만족하는 주기 <span class="math inline">\(r\)</span>을 찾는다.</li>
+<li><span class="math inline">\(r\)</span>이 홀수이거나 <span class="math inline">\(a^{r/2}\equiv-1\pmod N\)</span>이면 다른 <span class="math inline">\(a\)</span>를 선택하여 다시 계산한다.</li>
+<li>조건을 만족하는 <span class="math inline">\(r\)</span>을 얻으면 <span class="math inline">\(\gcd(a^{r/2}-1,N)\)</span>과 <span class="math inline">\(\gcd(a^{r/2}+1,N)\)</span>을 계산한다.</li>
+</ol>
+<p>선택한 <span class="math inline">\(a\)</span>에 따라 <span class="math inline">\(r\)</span>이 홀수로 나오거나 <span class="math inline">\(a^{r/2}\equiv-1\pmod N\)</span>이 될 수 있기 때문에 한 번의 시행에서 항상 인수를 얻는 것은 아니다. 또한 양자 측정에서 실제 주기의 약수만 얻을 수도 있다. 다만 찾은 <span class="math inline">\(r\)</span>과 인수는 고전 컴퓨터에서 바로 검증할 수 있기 때문에 조건을 만족하지 않으면 다시 시행하면 된다.</p>
+<p>이제 이 과정에서 가장 계산이 어려운 주기 찾기를 양자컴퓨터에서 어떻게 시행하는지 살펴보자.</p>
+</section>
+<section id="양자-주기-찾기" class="level2">
+<h2 class="anchored" data-anchor-id="양자-주기-찾기">3. 양자 주기 찾기</h2>
+<section id="두-개의-레지스터-준비" class="level3">
+<h3 class="anchored" data-anchor-id="두-개의-레지스터-준비">3.1 두 개의 레지스터 준비</h3>
+<p>첫 번째 레지스터에는 <span class="math inline">\(t\)</span>개의 큐비트를 사용하고 <span class="math inline">\(Q=2^t\)</span>라고 하자. 첫 번째 레지스터를 <span class="math inline">\(|0\rangle^{\otimes t}\)</span>로 준비한 뒤 각 큐비트에 아다마르 게이트를 적용하면 다음과 같이 <span class="math inline">\(0\)</span>부터 <span class="math inline">\(Q-1\)</span>까지의 상태가 같은 진폭을 가지는 중첩이 만들어진다.</p>
+<p><span class="math display">\[
+|0\rangle^{\otimes t}
+\xrightarrow{H^{\otimes t}}
+\frac1{\sqrt Q}
+\sum_{x=0}^{Q-1}|x\rangle
+\]</span></p>
+<p>두 번째 레지스터에는 <span class="math inline">\(N\)</span>보다 작은 나머지를 저장할 수 있도록 대략 <span class="math inline">\(n=\lceil\log_2N\rceil\)</span>개의 큐비트를 두고 <span class="math inline">\(|1\rangle\)</span> 상태로 준비한다. 따라서 두 레지스터를 합친 초기 상태는 다음과 같다.</p>
+<p><span class="math display">\[
+|\psi_0\rangle=
+\frac1{\sqrt Q}
+\sum_{x=0}^{Q-1}|x\rangle|1\rangle
+\]</span></p>
+<p>일반적으로 <span class="math inline">\(Q\)</span>는</p>
+<p><span class="math display">\[
+N^2\le Q&lt;2N^2
+\]</span></p>
+<p>이 되도록 정한다. <span class="math inline">\(N\)</span>이 <span class="math inline">\(n\)</span> 비트의 숫자라면 첫 번째 레지스터에는 대략 <span class="math inline">\(2n\)</span>개의 큐비트를 사용하는 것이다. 뒤에서 측정한 <span class="math inline">\(y/Q\)</span>를 연분수로 <span class="math inline">\(s/r\)</span>에 가깝게 복원하기 위해 이 정도의 정밀도가 필요하다.</p>
+</section>
+<section id="모듈러-지수-연산" class="level3">
+<h3 class="anchored" data-anchor-id="모듈러-지수-연산">3.2 모듈러 지수 연산</h3>
+<p>이제 두 레지스터에 다음과 같은 가역 연산을 적용한다.</p>
+<p><span class="math display">\[
+|x\rangle|1\rangle
+\longmapsto
+|x\rangle|a^x\bmod N\rangle
+\]</span></p>
+<p>이 연산이 <span class="math inline">\(U^x\)</span>라는 하나의 거대한 게이트로 바로 주어지는 것은 아니다. <span class="math inline">\(x\)</span>를 이진수로</p>
+<p><span class="math display">\[
+x=x_0 2^0+x_1 2^1+\cdots+x_{t-1}2^{t-1}
+\]</span></p>
+<p>와 같이 표현하면</p>
+<p><span class="math display">\[
+U^x=
+\prod_{j=0}^{t-1}
+\left(U^{2^j}\right)^{x_j}
+\]</span></p>
+<p>로 나눌 수 있다. 따라서 첫 번째 레지스터의 <span class="math inline">\(j\)</span>번째 큐비트가 1일 때만 <span class="math inline">\(U^{2^j}\)</span>를 적용하는 제어 연산들을 순서대로 시행하면 된다. 각 <span class="math inline">\(U^{2^j}\)</span>는 미리 고전적으로 계산한 <span class="math inline">\(a^{2^j}\bmod N\)</span>을 곱하는 모듈러 곱셈이고, 가역 덧셈기와 나머지 연산 회로를 이용하여 구현할 수 있다.</p>
+<p>첫 번째 레지스터에는 모든 <span class="math inline">\(x\)</span>가 중첩되어 있으므로 연산 이후의 상태는</p>
+<p><span class="math display">\[
+|\psi_1\rangle=
+\frac1{\sqrt Q}
+\sum_{x=0}^{Q-1}
+|x\rangle|a^x\bmod N\rangle
+\]</span></p>
+<p>가 된다. <span class="math inline">\(a^x\bmod N\)</span>은 <span class="math inline">\(r\)</span>을 주기로 가지기 때문에 이 상태 안에는 이미 <span class="math inline">\(r\)</span>에 대한 정보가 포함되어 있다.</p>
+<p>다만 모든 <span class="math inline">\(x\)</span>에 대한 함수값을 동시에 계산했다는 것만으로는 주기를 알 수 없다. 위 상태를 그대로 측정하면 여러 함수값을 모두 얻는 것이 아니라 하나의 <span class="math inline">\(x\)</span>와 하나의 함수값만 얻게 되기 때문이다. 따라서 각 함수값 사이에 들어 있는 위상 패턴을 QFT를 이용하여 측정 가능한 확률로 바꾸는 과정이 필요하다.</p>
+<p>먼저 이 상태에서 중첩과 얽힘이 어떻게 사용되는지 살펴보자.</p>
+</section>
+<section id="중첩이-함수값과-얽히는-과정" class="level3">
+<h3 class="anchored" data-anchor-id="중첩이-함수값과-얽히는-과정">3.3 중첩이 함수값과 얽히는 과정</h3>
+<p>여기서 사용되는 첫 번째 양자적 특성은 중첩이다. 첫 번째 레지스터에는 하나의 <span class="math inline">\(x\)</span>가 아니라 <span class="math inline">\(0\)</span>부터 <span class="math inline">\(Q-1\)</span>까지의 모든 <span class="math inline">\(x\)</span>가 진폭을 가진 채 들어 있다. 하지만 중첩만 만든다고 주기를 얻을 수 있는 것은 아니다. 모듈러 지수 연산을 적용하면 첫 번째 레지스터의 <span class="math inline">\(x\)</span>와 두 번째 레지스터의 <span class="math inline">\(a^x\bmod N\)</span>이 서로 얽히게 된다.</p>
+<p><span class="math display">\[
+\frac1{\sqrt Q}\sum_x |x\rangle|1\rangle
+\longrightarrow
+\frac1{\sqrt Q}\sum_x |x\rangle|a^x\bmod N\rangle
+\]</span></p>
+<p><span class="math inline">\(N=15\)</span>, <span class="math inline">\(a=7\)</span>, <span class="math inline">\(r=4\)</span>이고 <span class="math inline">\(Q\)</span>가 4의 배수라고 하면 이 상태를 함수값별로 다시 묶어 다음과 같이 쓸 수 있다.</p>
+<p><span class="math display">\[
+\begin{aligned}
+|\psi_1\rangle=\frac1{\sqrt Q}\bigg[
+&amp;\left(\sum_k|4k\rangle\right)|1\rangle
++\left(\sum_k|4k+1\rangle\right)|7\rangle\\
+&amp;+\left(\sum_k|4k+2\rangle\right)|4\rangle
++\left(\sum_k|4k+3\rangle\right)|13\rangle
+\bigg].
+\end{aligned}
+\]</span></p>
+<p>예를 들어 두 번째 레지스터에서 <span class="math inline">\(|7\rangle\)</span>을 측정했다고 생각해보자. <span class="math inline">\(a^x\bmod15=7\)</span>이 되는 <span class="math inline">\(x\)</span>만 첫 번째 레지스터에 남기 때문에 첫 번째 레지스터는</p>
+<p><span class="math display">\[
+|\phi\rangle=
+\frac1{\sqrt{Q/4}}
+\sum_{k=0}^{Q/4-1}|1+4k\rangle
+\]</span></p>
+<p>로 붕괴한다. 하나의 <span class="math inline">\(x\)</span>가 남는 것이 아니라 <span class="math inline">\(1,5,9,13,\ldots\)</span>처럼 정확히 주기 4만큼 떨어진 값들이 중첩된 상태로 남는다. 일반적인 주기 <span class="math inline">\(r\)</span>에 대해서는</p>
+<p><span class="math display">\[
+|\phi_{x_0}\rangle
+\approx
+\frac1{\sqrt{Q/r}}
+\sum_k|x_0+kr\rangle
+\]</span></p>
+<p>의 형태가 된다. 즉 얽힘은 두 레지스터 사이에 함수의 주기적 관계를 저장하고, 측정은 같은 함수값을 가지는 입력들만 골라 첫 번째 레지스터에 일정한 간격의 구조를 남긴다.</p>
+<p>실제 쇼어 알고리즘에서는 두 번째 레지스터를 반드시 측정할 필요는 없다. 측정하지 않고 첫 번째 레지스터에 QFT를 적용한 뒤 두 번째 레지스터를 무시해도, 각 함수값에 대응하는 가지들의 확률을 합한 결과는 동일하다. 다만 두 번째 레지스터를 측정한다고 생각하면 얽힘이 첫 번째 레지스터에 어떤 주기 구조를 남기는지 더 직접적으로 볼 수 있다.</p>
+<p>그렇지만 아직 <span class="math inline">\(x_0,x_0+r,x_0+2r,\ldots\)</span>를 하나씩 읽을 수 있는 것은 아니다. 이 상태를 측정하면 그중 하나의 <span class="math inline">\(x\)</span>만 나오기 때문이다. 따라서 다음 단계에서는 이 일정한 간격을 위상으로 옮기고, 간섭을 이용하여 간격의 역수에 해당하는 위치만 강하게 만들어야 한다.</p>
+</section>
+</section>
+<section id="왜-두-번째-레지스터를-1rangle로-시작해도-되는가" class="level2">
+<h2 class="anchored" data-anchor-id="왜-두-번째-레지스터를-1rangle로-시작해도-되는가">4. 왜 두 번째 레지스터를 <span class="math inline">\(|1\rangle\)</span>로 시작해도 되는가</h2>
+<p>앞에서 두 번째 레지스터를 단순히 <span class="math inline">\(|1\rangle\)</span>로 준비했다. 그런데 양자 위상 추정에서는 일반적으로 어떤 유니터리 연산자의 고유벡터를 입력 상태로 사용한다. 지금은 주기 <span class="math inline">\(r\)</span>도 모르고 고유벡터도 만들지 않았는데 왜 <span class="math inline">\(|1\rangle\)</span>만으로 위상 추정이 가능한지 알아보자.</p>
+<p>우선 다음과 같은 연산자 <span class="math inline">\(U\)</span>를 정의할 수 있다.</p>
+<p><span class="math display">\[
+U|y\rangle=|ay \pmod N\rangle
+\]</span></p>
+<p>이 연산자를 <span class="math inline">\(|1\rangle\)</span>에 반복해서 적용하면 다음과 같이 상태가 이동한다.</p>
+<p><span class="math display">\[
+|1\rangle
+\xrightarrow{U}|a\rangle
+\xrightarrow{U}|a^2\rangle
+\xrightarrow{U}\cdots
+\xrightarrow{U}|a^{r-1}\rangle
+\xrightarrow{U}|1\rangle
+\]</span></p>
+<p><span class="math inline">\(a^r\equiv1\pmod N\)</span>이기 때문에 <span class="math inline">\(r\)</span>번 이후에는 다시 <span class="math inline">\(|1\rangle\)</span>로 돌아오게 된다. 결국 <span class="math inline">\(U\)</span>는 이 <span class="math inline">\(r\)</span>개의 상태를 한 칸씩 이동시키는 순환 연산이라고 생각할 수 있다.</p>
+<section id="u의-고유벡터에는-주기가-위상으로-들어-있다" class="level3">
+<h3 class="anchored" data-anchor-id="u의-고유벡터에는-주기가-위상으로-들어-있다">4.1 <span class="math inline">\(U\)</span>의 고유벡터에는 주기가 위상으로 들어 있다</h3>
+<p>이 순환 연산의 고유벡터는 다음과 같이 정의할 수 있다.</p>
+<p><span class="math display">\[
+|u_s\rangle=
+\frac{1}{\sqrt r}
+\sum_{k=0}^{r-1}
+e^{-2\pi i sk/r}|a^k \pmod N\rangle,
+\qquad s=0,1,\ldots,r-1
+\]</span></p>
+<p>여기서 <span class="math inline">\(s\)</span>는 <span class="math inline">\(0\)</span>부터 <span class="math inline">\(r-1\)</span>까지의 정수이다. 이 상태에 실제로 <span class="math inline">\(U\)</span>를 곱해보자.</p>
+<p><span class="math display">\[
+\begin{aligned}
+U|u_s\rangle
+&amp;=
+\frac{1}{\sqrt r}
+\sum_{k=0}^{r-1}
+e^{-2\pi i sk/r}U|a^k\rangle \\
+&amp;=
+\frac{1}{\sqrt r}
+\sum_{k=0}^{r-1}
+e^{-2\pi i sk/r}|a^{k+1}\rangle.
+\end{aligned}
+\]</span></p>
+<p><span class="math inline">\(j=k+1\)</span>로 첨자를 바꾸면 다음과 같다.</p>
+<p><span class="math display">\[
+\begin{aligned}
+U|u_s\rangle
+&amp;=
+\frac{1}{\sqrt r}
+\sum_{j=1}^{r}
+e^{-2\pi i s(j-1)/r}|a^j\rangle \\
+&amp;=
+e^{2\pi i s/r}
+\frac{1}{\sqrt r}
+\sum_{j=1}^{r}
+e^{-2\pi i sj/r}|a^j\rangle.
+\end{aligned}
+\]</span></p>
+<p>여기서 <span class="math inline">\(|a^r\rangle=|1\rangle\)</span>이고 첨자가 한 바퀴 순환하기 때문에, 뒤의 합은 원래의 <span class="math inline">\(|u_s\rangle\)</span>와 동일하다. 따라서</p>
+<p><span class="math display">\[
+U|u_s\rangle=e^{2\pi i s/r}|u_s\rangle
+\]</span></p>
+<p>가 된다. 즉 <span class="math inline">\(|u_s\rangle\)</span>는 <span class="math inline">\(U\)</span>를 적용해도 상태 자체는 변하지 않고 <span class="math inline">\(e^{2\pi i s/r}\)</span>라는 위상만 곱해지는 고유벡터이다. 이 고유값의 위상에 우리가 찾으려는 <span class="math inline">\(s/r\)</span>, 그리고 결국 주기 <span class="math inline">\(r\)</span>에 대한 정보가 들어 있다.</p>
+</section>
+<section id="n15-a7인-경우를-직접-계산해보기" class="level3">
+<h3 class="anchored" data-anchor-id="n15-a7인-경우를-직접-계산해보기">4.2 <span class="math inline">\(N=15\)</span>, <span class="math inline">\(a=7\)</span>인 경우를 직접 계산해보기</h3>
+<p>앞에서 살펴본 것처럼 <span class="math inline">\(N=15\)</span>, <span class="math inline">\(a=7\)</span>인 경우 주기는 <span class="math inline">\(r=4\)</span>이다. 이때 <span class="math inline">\(s=1\)</span>인 고유벡터는 다음과 같다.</p>
+<p><span class="math display">\[
+\begin{aligned}
+|u_1\rangle
+&amp;=\frac12\left(
+e^0|7^0\rangle+
+e^{-2\pi i/4}|7^1\rangle+
+e^{-4\pi i/4}|7^2\rangle+
+e^{-6\pi i/4}|7^3\rangle
+\right)\\
+&amp;=\frac12\left(
+|1\rangle-i|7\rangle-|4\rangle+i|13\rangle
+\right).
+\end{aligned}
+\]</span></p>
+<p>실제로 이 상태에 <span class="math inline">\(U\)</span>를 곱해보자. <span class="math inline">\(U\)</span>는 <span class="math inline">\(|1\rangle\rightarrow|7\rangle\)</span>, <span class="math inline">\(|7\rangle\rightarrow|4\rangle\)</span>, <span class="math inline">\(|4\rangle\rightarrow|13\rangle\)</span>, <span class="math inline">\(|13\rangle\rightarrow|1\rangle\)</span>로 각 상태를 한 칸씩 이동시킨다.</p>
+<p><span class="math display">\[
+\begin{aligned}
+U|u_1\rangle
+&amp;=
+\frac12\left(
+U|1\rangle-iU|7\rangle-U|4\rangle+iU|13\rangle
+\right)\\
+&amp;=
+\frac12\left(
+|7\rangle-i|4\rangle-|13\rangle+i|1\rangle
+\right).
+\end{aligned}
+\]</span></p>
+<p>이 식에서 <span class="math inline">\(i\)</span>를 밖으로 묶으면</p>
+<p><span class="math display">\[
+\begin{aligned}
+U|u_1\rangle
+&amp;=
+i\cdot\frac12\left(
+\frac{1}{i}|7\rangle-|4\rangle-\frac{1}{i}|13\rangle+|1\rangle
+\right)\\
+&amp;=
+i\cdot\frac12\left(
+-i|7\rangle-|4\rangle+i|13\rangle+|1\rangle
+\right)\\
+&amp;=i|u_1\rangle.
+\end{aligned}
+\]</span></p>
+<p>결국 <span class="math inline">\(U|u_1\rangle=i|u_1\rangle\)</span>이고, <span class="math inline">\(i=e^{2\pi i(1/4)}\)</span>이므로 고유값에 <span class="math inline">\(s/r=1/4\)</span>가 들어 있다는 것을 실제 숫자로도 확인할 수 있다.</p>
+</section>
+<section id="그렇다면-1rangle은-어떻게-고유벡터들로-분해되는가" class="level3">
+<h3 class="anchored" data-anchor-id="그렇다면-1rangle은-어떻게-고유벡터들로-분해되는가">4.3 그렇다면 <span class="math inline">\(|1\rangle\)</span>은 어떻게 고유벡터들로 분해되는가</h3>
+<p>지금까지는 <span class="math inline">\(|u_s\rangle\)</span>를 입력하면 위상 <span class="math inline">\(s/r\)</span>을 얻을 수 있다는 것을 살펴보았다. 하지만 실제 알고리즘에서는 <span class="math inline">\(r\)</span>을 모르기 때문에 <span class="math inline">\(|u_s\rangle\)</span>를 직접 만들 수 없다. 그럼에도 <span class="math inline">\(|1\rangle\)</span>만 준비하면 되는 이유는 다음 식에 있다.</p>
+<p><span class="math display">\[
+|1\rangle=
+\frac{1}{\sqrt r}
+\sum_{s=0}^{r-1}|u_s\rangle
+\]</span></p>
+<p>이 항등식이 왜 성립하는지 고유벡터의 정의를 직접 대입해보자.</p>
+<p><span class="math display">\[
+\begin{aligned}
+\frac{1}{\sqrt r}\sum_{s=0}^{r-1}|u_s\rangle
+&amp;=
+\frac{1}{\sqrt r}\sum_{s=0}^{r-1}
+\left(
+\frac{1}{\sqrt r}
+\sum_{k=0}^{r-1}
+e^{-2\pi i sk/r}|a^k\rangle
+\right)\\
+&amp;=
+\frac1r
+\sum_{k=0}^{r-1}
+\left(
+\sum_{s=0}^{r-1}e^{-2\pi i sk/r}
+\right)|a^k\rangle.
+\end{aligned}
+\]</span></p>
+<p>괄호 안의 합을 따로 살펴보면</p>
+<p><span class="math display">\[
+\sum_{s=0}^{r-1}e^{-2\pi i sk/r}
+=
+\begin{cases}
+r, &amp; k=0,\\
+0, &amp; k=1,2,\ldots,r-1
+\end{cases}
+\]</span></p>
+<p>가 된다. <span class="math inline">\(k=0\)</span>인 경우에는 모든 항이 <span class="math inline">\(e^0=1\)</span>이므로 <span class="math inline">\(r\)</span>개가 그대로 더해진다. 반면 <span class="math inline">\(k\neq0\)</span>인 경우에는 복소평면에서 <span class="math inline">\(r\)</span>개의 방향으로 퍼진 벡터들이 한 바퀴를 이루며 서로 상쇄된다. 따라서 위의 전체 합에서는 <span class="math inline">\(k=0\)</span>인 항만 남게 된다.</p>
+<p><span class="math display">\[
+\frac1r\cdot r|a^0\rangle=|1\rangle
+\]</span></p>
+<p>즉 <span class="math inline">\(|1\rangle\)</span>은 각각 다른 위상 <span class="math inline">\(s/r\)</span>을 가지는 모든 <span class="math inline">\(|u_s\rangle\)</span>의 균등한 중첩이다. 우리가 <span class="math inline">\(r\)</span>을 모르더라도 <span class="math inline">\(|1\rangle\)</span>을 준비하면, 양자 위상 추정에 필요한 고유벡터들을 이미 한꺼번에 포함하고 있는 것과 같다.</p>
+</section>
+<section id="n15-a7에서-분해를-직접-확인하기" class="level3">
+<h3 class="anchored" data-anchor-id="n15-a7에서-분해를-직접-확인하기">4.3.1 <span class="math inline">\(N=15\)</span>, <span class="math inline">\(a=7\)</span>에서 분해를 직접 확인하기</h3>
+<p>위의 1의 <span class="math inline">\(r\)</span>제곱근의 합이 조금 추상적일 수 있기 때문에 <span class="math inline">\(r=4\)</span>인 경우를 직접 더해보자. 네 개의 고유벡터는 다음과 같다.</p>
+<p><span class="math display">\[
+|u_0\rangle=
+\frac12(
+|1\rangle+|7\rangle+|4\rangle+|13\rangle)
+\]</span></p>
+<p><span class="math display">\[
+|u_1\rangle=
+\frac12(
+|1\rangle-i|7\rangle-|4\rangle+i|13\rangle)
+\]</span></p>
+<p><span class="math display">\[
+|u_2\rangle=
+\frac12(
+|1\rangle-|7\rangle+|4\rangle-|13\rangle)
+\]</span></p>
+<p><span class="math display">\[
+|u_3\rangle=
+\frac12(
+|1\rangle+i|7\rangle-|4\rangle-i|13\rangle)
+\]</span></p>
+<p>이 네 상태를 다시 <span class="math inline">\(1/\sqrt r=1/2\)</span>의 계수로 더하면</p>
+<p><span class="math display">\[
+\begin{aligned}
+\frac12\sum_{s=0}^{3}|u_s\rangle
+=\frac14\big[&amp;
+(1+1+1+1)|1\rangle\\
+&amp;+(1-i-1+i)|7\rangle\\
+&amp;+(1-1+1-1)|4\rangle\\
+&amp;+(1+i-1-i)|13\rangle
+\big].
+\end{aligned}
+\]</span></p>
+<p><span class="math inline">\(|1\rangle\)</span>의 계수만 <span class="math inline">\(4/4=1\)</span>이 되고, <span class="math inline">\(|7\rangle\)</span>, <span class="math inline">\(|4\rangle\)</span>, <span class="math inline">\(|13\rangle\)</span>의 계수는 모두 0이 된다. 따라서</p>
+<p><span class="math display">\[
+\frac12(
+|u_0\rangle+|u_1\rangle+|u_2\rangle+|u_3\rangle)
+=
+|1\rangle
+\]</span></p>
+<p>을 직접 확인할 수 있다. 일반적인 <span class="math inline">\(r\)</span>에 대해 앞에서 계산한 1의 <span class="math inline">\(r\)</span>제곱근들이 상쇄되는 현상이 일어나는데, <span class="math inline">\(r=4\)</span>에서는 각각 <span class="math inline">\(1,-i,-1,i\)</span> 방향의 복소수가 더해져 0이 되는 것을 실제 계수로 확인한 것이다.</p>
+</section>
+<section id="제어된-ux를-적용하면-어떻게-위상이-생기는가" class="level3">
+<h3 class="anchored" data-anchor-id="제어된-ux를-적용하면-어떻게-위상이-생기는가">4.4 제어된 <span class="math inline">\(U^x\)</span>를 적용하면 어떻게 위상이 생기는가</h3>
+<p>첫 번째 레지스터의 중첩과 방금 구한 <span class="math inline">\(|1\rangle\)</span>의 분해를 같이 쓰면 초기 상태는 다음과 같이 표현할 수 있다.</p>
+<p><span class="math display">\[
+\begin{aligned}
+|\psi_0\rangle
+&amp;=
+\frac1{\sqrt Q}\sum_{x=0}^{Q-1}|x\rangle|1\rangle\\
+&amp;=
+\frac1{\sqrt{Qr}}
+\sum_{x=0}^{Q-1}\sum_{s=0}^{r-1}
+|x\rangle|u_s\rangle.
+\end{aligned}
+\]</span></p>
+<p>이제 제어된 <span class="math inline">\(U^x\)</span>를 적용하면 <span class="math inline">\(U^x|u_s\rangle=e^{2\pi ixs/r}|u_s\rangle\)</span>이므로</p>
+<p><span class="math display">\[
+|\psi_1\rangle=
+\frac1{\sqrt{Qr}}
+\sum_{x=0}^{Q-1}\sum_{s=0}^{r-1}
+e^{2\pi ixs/r}|x\rangle|u_s\rangle
+\]</span></p>
+<p>가 된다. 이 과정을 하나의 <span class="math inline">\(|x\rangle|u_s\rangle\)</span>에 대해서만 다시 쓰면 다음과 같다.</p>
+<p><span class="math display">\[
+|x\rangle|u_s\rangle
+\longrightarrow
+|x\rangle U^x|u_s\rangle
+=
+e^{2\pi ixs/r}|x\rangle|u_s\rangle
+\]</span></p>
+<p>흥미로운 점은 연산을 받은 두 번째 레지스터의 <span class="math inline">\(|u_s\rangle\)</span>가 연산 전후에 그대로라는 것이다. 대신 고유값 <span class="math inline">\(e^{2\pi ixs/r}\)</span>이 전체 항의 위상으로 빠져나온다. 그리고 이 위상은 첫 번째 레지스터의 값 <span class="math inline">\(x\)</span>에 따라 달라진다. 두 번째 레지스터에 적용한 연산의 위상 정보가 제어 레지스터 쪽에 나타나는 이 현상을 위상 되먹임이라고 한다.</p>
+<p>만약 첫 번째 레지스터에 하나의 <span class="math inline">\(x\)</span>만 있었다면 이 값은 관측할 수 없는 전체 위상에 불과하다. 하지만 첫 번째 레지스터에는 여러 <span class="math inline">\(x\)</span>가 중첩되어 있기 때문에 각 <span class="math inline">\(|x\rangle\)</span>마다 서로 다른 위상이 붙고, 이 위상들의 차이는 이후의 간섭에서 관측할 수 있다. 따라서 중첩이 여러 입력을 준비하고, 얽힘이 입력과 함수값의 주기적 관계를 저장하며, 위상 되먹임이 그 관계를 첫 번째 레지스터의 상대위상으로 옮긴다고 볼 수 있다.</p>
+</section>
+</section>
+<section id="qft는-위상에-들어-있는-주기를-어떻게-측정값으로-바꾸는가" class="level2">
+<h2 class="anchored" data-anchor-id="qft는-위상에-들어-있는-주기를-어떻게-측정값으로-바꾸는가">5. QFT는 위상에 들어 있는 주기를 어떻게 측정값으로 바꾸는가</h2>
+<p>제어된 <span class="math inline">\(U^x\)</span> 연산 이후 첫 번째 레지스터에는 <span class="math inline">\(e^{2\pi ixs/r}\)</span>이라는 위상 패턴이 생겼다. 다만 양자 상태의 위상은 그대로 측정할 수 없다. 따라서 첫 번째 레지스터에 역 QFT를 적용하여 이 위상 차이가 특정한 <span class="math inline">\(y\)</span>에서 높은 확률을 가지도록 바꾸어주어야 한다.</p>
+<p>역 QFT의 정의는 다음과 같다.</p>
+<p><span class="math display">\[
+QFT^{-1}|x\rangle
+=
+\frac1{\sqrt Q}
+\sum_{y=0}^{Q-1}
+e^{-2\pi ixy/Q}|y\rangle
+\]</span></p>
+<p>앞에서 구한 상태에 <span class="math inline">\((QFT^{-1}\otimes I)\)</span>를 실제로 곱해보자.</p>
+<p><span class="math display">\[
+\begin{aligned}
+|\psi_2\rangle
+&amp;=
+(QFT^{-1}\otimes I)|\psi_1\rangle\\
+&amp;=
+\frac1{\sqrt{Qr}}
+\sum_{s=0}^{r-1}\sum_{x=0}^{Q-1}
+e^{2\pi ixs/r}
+\left(QFT^{-1}|x\rangle\right)|u_s\rangle.
+\end{aligned}
+\]</span></p>
+<p>여기에 역 QFT의 정의를 대입하면</p>
+<p><span class="math display">\[
+\begin{aligned}
+|\psi_2\rangle
+&amp;=
+\frac1{\sqrt{Qr}}
+\sum_{s=0}^{r-1}\sum_{x=0}^{Q-1}
+e^{2\pi ixs/r}
+\left(
+\frac1{\sqrt Q}\sum_{y=0}^{Q-1}
+e^{-2\pi ixy/Q}|y\rangle
+\right)|u_s\rangle\\
+&amp;=
+\frac1{Q\sqrt r}
+\sum_{s=0}^{r-1}\sum_{y=0}^{Q-1}
+\left[
+\sum_{x=0}^{Q-1}
+e^{2\pi ix(s/r-y/Q)}
+\right]
+|y\rangle|u_s\rangle.
+\end{aligned}
+\]</span></p>
+<p>따라서 특정한 <span class="math inline">\(|y\rangle|u_s\rangle\)</span>를 측정할 확률진폭은</p>
+<p><span class="math display">\[
+A(y,s)
+=
+\frac1{Q\sqrt r}
+\sum_{x=0}^{Q-1}
+e^{2\pi ix(s/r-y/Q)}
+\]</span></p>
+<p>가 된다. 여기서 왜 <span class="math inline">\(y/Q\)</span>가 <span class="math inline">\(s/r\)</span>에 가까운 값이 주로 측정되는지 알아보자.</p>
+<section id="yqsr인-경우" class="level3">
+<h3 class="anchored" data-anchor-id="yqsr인-경우">5.1 <span class="math inline">\(y/Q=s/r\)</span>인 경우</h3>
+<p>만약 <span class="math inline">\(y/Q=s/r\)</span>이라면 지수 부분이 모두 0이 된다.</p>
+<p><span class="math display">\[
+e^{2\pi ix(s/r-y/Q)}=e^0=1
+\]</span></p>
+<p>따라서 <span class="math inline">\(Q\)</span>개의 항이 모두 같은 방향으로 더해지고</p>
+<p><span class="math display">\[
+\sum_{x=0}^{Q-1}1=Q
+\]</span></p>
+<p>가 된다. 이 경우 확률진폭의 크기가 가장 커진다.</p>
+</section>
+<section id="yq와-sr이-다른-경우" class="level3">
+<h3 class="anchored" data-anchor-id="yq와-sr이-다른-경우">5.2 <span class="math inline">\(y/Q\)</span>와 <span class="math inline">\(s/r\)</span>이 다른 경우</h3>
+<p>반대로 두 값이 다르다면 <span class="math inline">\(x\)</span>가 증가할 때마다 복소수 벡터의 각도가 조금씩 돌아간다. 이를 등비급수로 계산하면</p>
+<p><span class="math display">\[
+\sum_{x=0}^{Q-1}e^{2\pi ix\delta}
+=
+\frac{1-e^{2\pi iQ\delta}}
+{1-e^{2\pi i\delta}},
+\qquad
+\delta=\frac{s}{r}-\frac{y}{Q}
+\]</span></p>
+<p>가 된다. <span class="math inline">\(\delta\)</span>가 0에서 멀면 각 항들이 복소평면의 여러 방향으로 퍼지면서 서로 상쇄된다. 반면 <span class="math inline">\(\delta\)</span>가 0에 가까우면 벡터들이 거의 같은 방향을 가리키므로 큰 값으로 더해진다.</p>
+<p>여기서 실제로 이용하는 양자적 특성이 간섭이다. 고전적인 확률은 각 경우의 확률을 더하기 때문에 서로를 지울 수 없다. 반면 양자 상태에서는 측정 확률을 계산하기 전에 복소수인 확률진폭을 먼저 더한다. 따라서 위상이 같은 항들은 보강되어 진폭이 커지고, 반대 방향의 항들은 진폭 단계에서 서로 상쇄되어 확률이 0에 가까워질 수 있다. 쇼어 알고리즘은 이 차이를 이용하여 주기와 맞지 않는 <span class="math inline">\(y\)</span>의 진폭은 지우고, <span class="math inline">\(y/Q\approx s/r\)</span>인 위치의 진폭만 남긴다.</p>
+<p>따라서 측정 확률은</p>
+<p><span class="math display">\[
+\frac{y}{Q}\approx\frac{s}{r}
+\]</span></p>
+<p>를 만족하는 <span class="math inline">\(y\)</span> 주변에 봉우리를 만들게 된다. 결국 QFT는 주기 <span class="math inline">\(r\)</span>을 직접 출력하는 연산이라기보다는, 위상으로 들어 있던 <span class="math inline">\(s/r\)</span>을 측정 가능한 <span class="math inline">\(y/Q\)</span>의 형태로 바꾸는 연산이다.</p>
+</section>
+<section id="n15-a7인-경우" class="level3">
+<h3 class="anchored" data-anchor-id="n15-a7인-경우">5.3 <span class="math inline">\(N=15\)</span>, <span class="math inline">\(a=7\)</span>인 경우</h3>
+<p>앞에서 구한 주기는 <span class="math inline">\(r=4\)</span>였다. 첫 번째 레지스터에서 <span class="math inline">\(Q=256\)</span>을 사용한다고 하면 <span class="math inline">\(s=0,1,2,3\)</span>에 대해 봉우리가 생기는 위치는 다음과 같다.</p>
+<p><span class="math display">\[
+y\approx Q\frac{s}{r}
+=
+256\times
+\left\{
+0,\frac14,\frac24,\frac34
+\right\}
+=
+\{0,64,128,192\}
+\]</span></p>
+<p>예를 들어 <span class="math inline">\(y=64\)</span>가 측정되었다면</p>
+<p><span class="math display">\[
+\frac{y}{Q}=\frac{64}{256}=\frac14
+\]</span></p>
+<p>이므로 <span class="math inline">\(s=1\)</span>, <span class="math inline">\(r=4\)</span>를 바로 확인할 수 있다. 다만 일반적인 경우에는 <span class="math inline">\(Q\)</span>가 <span class="math inline">\(r\)</span>의 배수가 아니기 때문에 정확한 <span class="math inline">\(s/r\)</span>이 아니라 그 근처의 값이 측정된다.</p>
+</section>
+</section>
+<section id="측정값에서-주기-r을-복원하기" class="level2">
+<h2 class="anchored" data-anchor-id="측정값에서-주기-r을-복원하기">6. 측정값에서 주기 <span class="math inline">\(r\)</span>을 복원하기</h2>
+<p>측정한 <span class="math inline">\(y\)</span>와 우리가 정해둔 <span class="math inline">\(Q\)</span>를 이용하면 <span class="math inline">\(y/Q\)</span>를 계산할 수 있다. 이제 이 값에 가장 가까운 작은 분모를 가진 분수를 찾아야 하는데, 이때 연분수 알고리즘을 사용한다.</p>
+<p>예를 들어 실제 <span class="math inline">\(s/r\)</span>이 <span class="math inline">\(1/4\)</span>인데 측정 과정에서 <span class="math inline">\(y/Q=65/256\approx0.2539\)</span>를 얻었다고 생각해보자. 이 값은 <span class="math inline">\(1/4=0.25\)</span>와 매우 가깝기 때문에 연분수를 이용하면 분모의 후보로 <span class="math inline">\(r=4\)</span>를 얻을 수 있다.</p>
+<p>찾은 <span class="math inline">\(r\)</span>은 다음 식을 이용하여 고전적으로 검증한다.</p>
+<p><span class="math display">\[
+a^r\equiv1\pmod N
+\]</span></p>
+<p>여기서 한 번의 측정으로 항상 정확한 <span class="math inline">\(r\)</span>을 얻는 것은 아니다. 측정한 <span class="math inline">\(s\)</span>와 <span class="math inline">\(r\)</span>이 서로소가 아니라면 <span class="math inline">\(s/r\)</span>을 기약하는 과정에서 실제 주기의 약수만 얻을 수 있다. 예를 들어 <span class="math inline">\(r=4\)</span>인 상태에서 <span class="math inline">\(s=2\)</span>가 측정되면 <span class="math inline">\(s/r=2/4=1/2\)</span>가 되어 분모 2만 남는다. 이런 경우에는 양자 측정을 다시 시행하여 다른 <span class="math inline">\(s/r\)</span>을 얻거나, 여러 번 얻은 분모 후보의 최소공배수를 계산할 수 있다.</p>
+<p>검증된 <span class="math inline">\(r\)</span>이 짝수이고 <span class="math inline">\(a^{r/2}\not\equiv-1\pmod N\)</span>이라면 다음 계산을 통해 인수를 구한다.</p>
+<p><span class="math display">\[
+p=\gcd(a^{r/2}-1,N),
+\qquad
+q=\gcd(a^{r/2}+1,N)
+\]</span></p>
+<p>즉 양자회로에서 바로 <span class="math inline">\(p\)</span>, <span class="math inline">\(q\)</span>가 측정되는 것은 아니다. 양자회로에서는 <span class="math inline">\(s/r\)</span>에 가까운 값을 얻고, 연분수로 <span class="math inline">\(r\)</span>을 복원한 뒤, 마지막의 최대공약수 계산을 통해 소인수를 구하게 된다.</p>
+</section>
+<section id="계산-복잡도에서-어떤-이점이-생기는가" class="level2">
+<h2 class="anchored" data-anchor-id="계산-복잡도에서-어떤-이점이-생기는가">7. 계산 복잡도에서 어떤 이점이 생기는가?</h2>
+<p>쇼어 알고리즘이 고전적인 소인수분해 알고리즘보다 빠르다고 할 때, 우선 숫자 <span class="math inline">\(N\)</span>의 크기와 입력 크기를 구분할 필요가 있다. <span class="math inline">\(N\)</span>을 이진수로 표현하는 데 필요한 비트 수를 <span class="math inline">\(n\)</span>이라고 하면</p>
+<p><span class="math display">\[
+n=\lceil\log_2N\rceil
+\]</span></p>
+<p>이 된다. 예를 들어 <span class="math inline">\(N=15\)</span>는 이진수로 <span class="math inline">\(1111\)</span>이므로 입력 크기는 4비트이다. 마찬가지로 <span class="math inline">\(N\)</span>이 대략 <span class="math inline">\(2^{2048}\)</span> 정도의 숫자라면 <span class="math inline">\(N\)</span> 자체는 매우 큰 숫자이지만 입력 크기 <span class="math inline">\(n\)</span>은 약 2048이 된다.</p>
+<p>알고리즘의 시간 복잡도에서 <span class="math inline">\(O(n)\)</span>, <span class="math inline">\(O(n^2)\)</span>과 같이 표현하는 <span class="math inline">\(n\)</span>은 보통 이 입력 크기를 뜻한다. 따라서 소인수분해의 계산량을 비교할 때에도 <span class="math inline">\(N\)</span>에 대한 식을 입력 크기 <span class="math inline">\(n=\log_2N\)</span>에 대한 식으로 바꾸어 비교해야 한다.</p>
+<section id="시험-나눗셈의-경우" class="level3">
+<h3 class="anchored" data-anchor-id="시험-나눗셈의-경우">7.1 시험 나눗셈의 경우</h3>
+<p>가장 단순한 소인수분해 방법은 <span class="math inline">\(2\)</span>부터 <span class="math inline">\(\sqrt N\)</span>까지의 숫자로 직접 나누어보는 방법이다. 이 경우 확인해야 하는 숫자의 수는 대략</p>
+<p><span class="math display">\[
+O(\sqrt N)
+\]</span></p>
+<p>이다. 그런데 <span class="math inline">\(N\approx2^n\)</span>이므로 이를 입력 크기 <span class="math inline">\(n\)</span>에 대한 식으로 바꾸면</p>
+<p><span class="math display">\[
+O(\sqrt N)
+=
+O\left(\sqrt{2^n}\right)
+=
+O(2^{n/2})
+\]</span></p>
+<p>가 된다.</p>
+<p>즉 <span class="math inline">\(N\)</span>에 대해서 보면 제곱근만큼 증가하는 함수이지만, 실제 입력 크기인 <span class="math inline">\(n\)</span>에 대해서 보면 지수함수이다. 이 차이가 중요한 이유를 입력 크기가 2배가 되는 경우로 한번 생각해보자.</p>
+<p><span class="math display">\[
+n\rightarrow2n
+\]</span></p>
+<p>이면 필요한 계산량은</p>
+<p><span class="math display">\[
+2^{n/2}\rightarrow2^{2n/2}=2^n
+\]</span></p>
+<p>이 된다. 기존의 계산량이 <span class="math inline">\(2^{n/2}\)</span>이었으므로 입력 크기가 2배가 되었을 때 계산량은 단순히 2배가 아니라 기존 계산량의 제곱이 된다.</p>
+</section>
+<section id="실제-고전-알고리즘의-경우" class="level3">
+<h3 class="anchored" data-anchor-id="실제-고전-알고리즘의-경우">7.2 실제 고전 알고리즘의 경우</h3>
+<p>실제 큰 숫자의 소인수분해에서는 시험 나눗셈보다 훨씬 빠른 일반 수체 체를 사용한다. 이 알고리즘의 복잡도는 대략 다음과 같이 표현된다.</p>
+<p><span class="math display">\[
+\exp\left(
+O\left((\ln N)^{1/3}(\ln\ln N)^{2/3}\right)
+\right)
+\]</span></p>
+<p>여기에 <span class="math inline">\(\ln N=O(n)\)</span>을 대입하면 입력 크기에 대해서는</p>
+<p><span class="math display">\[
+\exp\left(
+O\left(n^{1/3}(\log n)^{2/3}\right)
+\right)
+\]</span></p>
+<p>가 된다.</p>
+<p>이는 시험 나눗셈의 <span class="math inline">\(O(2^{n/2})\)</span>보다는 훨씬 느리게 증가하지만 <span class="math inline">\(O(n^2)\)</span>, <span class="math inline">\(O(n^3)\)</span>과 같은 다항함수보다는 빠르게 증가한다. 따라서 준지수이지만 동시에 초다항인 복잡도를 가진다고 표현할 수 있다.</p>
+</section>
+<section id="쇼어-알고리즘의-경우" class="level3">
+<h3 class="anchored" data-anchor-id="쇼어-알고리즘의-경우">7.3 쇼어 알고리즘의 경우</h3>
+<p>쇼어 알고리즘에서 QFT를 정확하게 구현하는 데 필요한 게이트 수는 첫 번째 레지스터의 큐비트 수에 대해 <span class="math inline">\(O(n^2)\)</span> 정도이다. 다만 전체 알고리즘에서는 제어된 모듈러 지수 연산의 비용이 더 크고, 기본적인 산술 회로를 가정하면 전체 게이트 복잡도를 대략</p>
+<p><span class="math display">\[
+O(n^3)=O((\log N)^3)
+\]</span></p>
+<p>으로 설명할 수 있다.</p>
+<p>따라서 쇼어 알고리즘 자체가 <span class="math inline">\(O(n)\)</span>인 선형 시간 알고리즘은 아니다. 여기서의 이점은 <span class="math inline">\(O(n)\)</span>이냐 <span class="math inline">\(O(n^3)\)</span>이냐의 차이가 아니라, 고전적인 소인수분해의 초다항적 계산량이 양자 알고리즘에서는 다항적 계산량으로 바뀐다는 데 있다.</p>
+<p>이를 정리하면 다음과 같다.</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>방법</th>
+<th style="text-align: right;">입력 크기 <span class="math inline">\(n\)</span>에 대한 계산량</th>
+<th>증가 형태</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>시험 나눗셈</td>
+<td style="text-align: right;"><span class="math inline">\(O(2^{n/2})\)</span></td>
+<td>지수</td>
+</tr>
+<tr class="even">
+<td>일반 수체 체</td>
+<td style="text-align: right;"><span class="math inline">\(\exp(O(n^{1/3}(\log n)^{2/3}))\)</span></td>
+<td>초다항</td>
+</tr>
+<tr class="odd">
+<td>쇼어 알고리즘</td>
+<td style="text-align: right;">기본적인 회로에서 <span class="math inline">\(O(n^3)\)</span></td>
+<td>다항</td>
+</tr>
+</tbody>
+</table>
+<p>이번에는 입력 크기가 <span class="math inline">\(n\)</span>에서 <span class="math inline">\(2n\)</span>으로 2배가 되는 경우 쇼어 알고리즘의 계산량을 생각해보자.</p>
+<p><span class="math display">\[
+n^3\rightarrow(2n)^3=8n^3
+\]</span></p>
+<p>즉 3차 함수에서는 입력 크기가 2배가 되면 계산량이 8배가 된다. 반면 시험 나눗셈의 경우 앞에서 살펴본 것처럼 계산량 자체가 제곱이 된다. 일반 수체 체는 시험 나눗셈보다는 증가 속도가 느리지만 여전히 다항보다 빠르게 증가하기 때문에 <span class="math inline">\(n\)</span>이 커질수록 쇼어 알고리즘과의 차이가 계속 커지게 된다.</p>
+</section>
+<section id="양자적-특성이-각각-어디에-사용되는가" class="level3">
+<h3 class="anchored" data-anchor-id="양자적-특성이-각각-어디에-사용되는가">7.4 양자적 특성이 각각 어디에 사용되는가</h3>
+<p>쇼어 알고리즘의 계산 우위를 단순히 모든 함수값을 동시에 계산한다는 말로 설명하면 중요한 부분이 빠진다. 중첩된 상태를 그대로 측정하면 결국 하나의 함수값만 얻기 때문이다. 실제로는 여러 양자적 특성이 다음 순서로 함께 사용된다.</p>
+<ol type="1">
+<li><strong>중첩</strong>: 첫 번째 레지스터에 <span class="math inline">\(0\)</span>부터 <span class="math inline">\(Q-1\)</span>까지의 모든 <span class="math inline">\(x\)</span>를 진폭을 가진 상태로 준비한다. 이는 여러 입력 사이의 상대위상을 조작할 수 있는 계산 공간을 만든다.</li>
+<li><strong>얽힘</strong>: 모듈러 지수 연산으로 <span class="math inline">\(x\)</span>와 <span class="math inline">\(a^x\bmod N\)</span>을 연결한다. 같은 함수값을 가지는 <span class="math inline">\(x_0,x_0+r,x_0+2r,\ldots\)</span>가 하나의 가지 안에서 중첩되면서 주기적 간격이 상태에 저장된다.</li>
+<li><strong>위상 되먹임</strong>: 두 번째 레지스터의 고유값 <span class="math inline">\(e^{2\pi is/r}\)</span>을 첫 번째 레지스터의 <span class="math inline">\(x\)</span>에 따른 상대위상 <span class="math inline">\(e^{2\pi ixs/r}\)</span>으로 옮긴다. 관측할 수 없던 주기 정보가 간섭시킬 수 있는 형태로 바뀐다.</li>
+<li><strong>간섭</strong>: 역 QFT를 적용하여 <span class="math inline">\(y/Q\approx s/r\)</span>인 항들은 같은 방향으로 더하고, 나머지 항들은 서로 상쇄한다. 이 과정에서 답이 아닌 값의 확률진폭은 작아지고 주기와 관련된 값의 확률진폭은 커진다.</li>
+<li><strong>측정과 고전적 후처리</strong>: 강화된 분포에서 <span class="math inline">\(y\)</span>를 측정하고, 연분수와 최대공약수 계산을 이용하여 <span class="math inline">\(r\)</span>과 소인수를 복원한다.</li>
+</ol>
+<p>따라서 양자컴퓨터가 모든 함수값을 한꺼번에 출력하기 때문에 빠른 것은 아니다. 중첩을 유지한 상태에서 함수값과 입력을 얽히게 하고, 주기 정보를 상대위상으로 바꾼 뒤, 간섭을 통해 필요한 정보만 측정될 가능성을 높이기 때문에 빠른 것이다. 여러 값을 계산하는 능력보다 여러 계산 경로의 확률진폭을 서로 더하거나 지울 수 있다는 점이 더 중요하다.</p>
+</section>
+</section>
+<section id="계산-복잡도와-실제-양자컴퓨터의-차이" class="level2">
+<h2 class="anchored" data-anchor-id="계산-복잡도와-실제-양자컴퓨터의-차이">8. 계산 복잡도와 실제 양자컴퓨터의 차이</h2>
+<p>앞에서 살펴본 <span class="math inline">\(O(n^3)\)</span>은 논리 게이트를 기준으로 한 점근적 복잡도이다. 실제 양자컴퓨터에서는 긴 회로 동안 양자 상태를 유지해야 하고, 오류정정을 위한 추가적인 물리 큐비트와 게이트가 필요하다. 따라서 다항 시간 알고리즘이라는 사실이 현재의 양자컴퓨터에서 큰 RSA 키를 바로 소인수분해할 수 있다는 뜻은 아니다.</p>
+<p>다만 충분한 수의 논리 큐비트와 내결함성 양자계산이 가능하다고 가정하면, 소인수분해 문제를 입력 크기에 대해 다항 시간에 해결할 수 있다는 점은 그대로 유지된다. 즉 현재 하드웨어에서 실행할 수 있는가와 알고리즘의 복잡도 부류가 무엇인가는 구분해서 생각할 필요가 있다.</p>
+</section>
+<section id="정리" class="level2">
+<h2 class="anchored" data-anchor-id="정리">9. 정리</h2>
+<p>지금까지 쇼어 알고리즘에서 소인수분해가 어떻게 주기 찾기 문제로 바뀌는지 알아보았다. <span class="math inline">\(a^r\equiv1\pmod N\)</span>을 만족하는 주기 <span class="math inline">\(r\)</span>을 찾으면</p>
+<p><span class="math display">\[
+a^r-1=(a^{r/2}-1)(a^{r/2}+1)
+\]</span></p>
+<p>로 인수분해할 수 있고, 두 항과 <span class="math inline">\(N\)</span>의 최대공약수를 계산하여 소인수를 얻을 수 있었다.</p>
+<p>양자 계산에서는 먼저 여러 <span class="math inline">\(x\)</span>를 중첩하고, 모듈러 지수 연산을 통해 <span class="math inline">\(x\)</span>와 <span class="math inline">\(a^x\bmod N\)</span>을 얽히게 한다. 이 얽힘 안에는 같은 함수값을 가지는 입력들이 <span class="math inline">\(r\)</span>만큼 떨어져 있다는 관계가 들어 있다. <span class="math inline">\(|1\rangle\)</span>을 고유벡터들의 합으로 분해하면 이 관계를 <span class="math inline">\(e^{2\pi ixs/r}\)</span>이라는 상대위상으로 표현할 수 있고, 역 QFT는 위상이 맞는 항들을 보강하고 맞지 않는 항들을 상쇄한다. 이후 측정한 <span class="math inline">\(y/Q\)</span>에서 연분수로 <span class="math inline">\(r\)</span>을 복원하고, 고전적으로 최대공약수를 계산하여 인수를 얻는다.</p>
+<p>계산 복잡도에서 사용하는 <span class="math inline">\(n\)</span>은 숫자 <span class="math inline">\(N\)</span> 자체가 아니라 <span class="math inline">\(N\)</span>을 나타내는 비트 수 <span class="math inline">\(n=\lceil\log_2N\rceil\)</span>이다. 쇼어 알고리즘은 선형 시간인 <span class="math inline">\(O(n)\)</span>은 아니고, 기본적인 회로에서는 대략 <span class="math inline">\(O(n^3)\)</span>의 다항 시간으로 설명할 수 있다. 알려진 고전 소인수분해 알고리즘의 계산량은 입력 크기에 대해 초다항적으로 증가하므로, <span class="math inline">\(n\)</span>이 커질수록 두 알고리즘의 차이가 계속 커진다.</p>
+<p>결국 쇼어 알고리즘의 양자적 이점은 중첩만으로 생기는 것이 아니다. 중첩, 얽힘, 위상 되먹임, 간섭을 순서대로 이용하여 함수의 주기라는 전체적인 성질만 측정 가능한 형태로 바꾸는 데에서 생긴다.</p>
+
+
+</section>
+
+<div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" id="quarto-citation"><h2 class="anchored quarto-appendix-heading">Citation</h2><div><div class="quarto-appendix-secondary-label">BibTeX citation:</div><pre class="sourceCode code-with-copy quarto-appendix-bibtex"><code class="sourceCode bibtex">@online{jo2026,
+  author = {Jo, Hyungwoo},
+  title = {쇼어 {알고리즘:} {소인수분해를} {주기} {찾기로} {바꾸는}
+    {방법}},
+  date = {2026-08-10},
+  langid = {en}
+}
+</code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre><div class="quarto-appendix-secondary-label">For attribution, please cite this work as:</div><div id="ref-jo2026" class="csl-entry quarto-appendix-citeas" role="listitem">
+Jo, Hyungwoo. 2026. <span>“쇼어 알고리즘: 소인수분해를 주기 찾기로
+바꾸는 방법.”</span> August 10, 2026.
+</div></div></section></div></main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+<script src="../../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>
